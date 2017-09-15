@@ -9,7 +9,7 @@ const WeiboPost = new mongoose.Schema({
   screenName: String,
   text: String,
   source: String,
-  postCreatedAt: String,
+  postCreatedAt: Date,
   repostsCount: Number,
   commentsCount: Number,
   attitudesCount: Number,

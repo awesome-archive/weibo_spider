@@ -1,14 +1,6 @@
-var getWeibo = require('./getWeibo');
-var mysql = require('mysql');
+'use strict';
 
-var links = [];
-
-getWeibo.setDateTime(new Date(2017, 5, 25).getTime());
-
-var cb = function(){
-	console.log('ok');
-};
-
+const links = [];
 
 // 中山大学
 links.push('https://m.weibo.cn/api/container/getIndex?jumpfrom=weibocom&type=uid&value=1892723783&containerid=1076031892723783&page=');
@@ -167,33 +159,4 @@ links.push('https://m.weibo.cn/api/container/getIndex?containerid=10760333810270
 // 广东科技学院
 links.push('https://m.weibo.cn/api/container/getIndex?containerid=1076032128706671&page=');
 
-
-
-
-var len = links.length;
-(function getWeiboRange(i, len, cb){
-	if (i<len) {
-		getWeibo.getLinksToDb(links[i], 1, function(){
-			getWeiboRange(++i, len, cb);
-		});
-	} else {
-		cb();
-	}
-})(0, len, function(){
-	console.log('success');
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+module.exports = links;

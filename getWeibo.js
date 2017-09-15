@@ -1,176 +1,127 @@
-var https = require('https');
-var mysql = require('mysql');
-var util = require('util');
-var url = require('url');
-var fs = require('fs');
+'use strict';
 
+const url = require('url');
+const axios = require('axios');
+const moment = require('moment');
 
-var connection = mysql.createConnection({
-	host: 'localhost',
-	user: 'root',
-	password: '0000',
-	database: 'weibo'
-});
+const WeiboPost = require('./models/WeiboPost');
 
-connection.connect();
-
-var dateTime = Date.now();
-
-function setDateTime(t){
-	dateTime = t;
+// basic mobile link to api link
+function tranLink(link) {
+  return new Promise((resolve, reject) => {
+    // 兼容直接api接口链接
+    if (/m.weibo.cn\/api\/container\/getIndex/.test(link)) return resolve(link);
+    let o = url.parse(link);
+    if (o.hostname == 'm.weibo.cn') {
+      if (/\/p\/\d{16}/.test(o.pathname)) {
+        let cid = /\/p\/(\d{16})/.exec(o.pathname)[1].replace('100505', '107603');
+        let targetLink = 'https://m.weibo.cn/api/container/getIndex?containerid=' + cid + '&page=';
+        resolve(targetLink);
+      } else if (/\/u\/\d{10}/.test(o.pathname)) {
+        let cid = /\/u\/(\d{10})/.exec(o.pathname)[1];
+        cid = '107603' + cid;
+        let targetLink = 'https://m.weibo.cn/api/container/getIndex?containerid=' + cid + '&page=';
+        resolve(targetLink);
+      } else {
+        reject();
+      }
+    } else {
+      reject();
+    }
+  })
 }
 
-// 给定手机端网页微博主页链接
-function tranLink(l, cb){
-	var o = url.parse(l);
-	if (o.hostname == 'm.weibo.cn') {
-		if (/\/p\/\d{16}/.test(o.pathname)) {
-			var cid = /\/p\/(\d{16})/.exec(o.pathname)[1].replace('100505', '107603');
-			var link = 'https://m.weibo.cn/api/container/getIndex?containerid=' + cid + '&page=';
-			// console.log(link);
-			getLinksToDb(link, 1, cb);
-		} else if (/\/u\/\d{10}/.test(o.pathname)) {
-			var cid = /\/u\/(\d{10})/.exec(o.pathname)[1];
-			cid = '107603' + cid;
-			var link = 'https://m.weibo.cn/api/container/getIndex?containerid=' + cid + '&page=';
-			// console.log(link);
-			getLinksToDb(link, 1, cb);
-		} else {
-			console.log('错误的链接');
-		}
-	} else {
-		console.log('错误的链接');
-	}
+function saveOrUpdataToDb(post) {
+  return WeiboPost.findOne({ scheme: post.scheme }).then(item => {
+    if (item) {
+      return WeiboPost.findByIdAndUpdate(item._id, post);
+    } else {
+      let item = new WeiboPost(post);
+      return item.save();
+    }
+  });
 }
 
-
-// ajax传输特定的链接
-function getLinksToDb(link, count, callback){
-	getJson(link, count, function(link, count, body){
-		parseJson(link, count, body, function(o){
-			saveJsonToDb(o);
-		}, callback);
-	});
+function requestAndParseData(link, page) {
+  return axios.get(`${link}${page}`).then(res => {
+    return res.data;
+  }).then(data => {
+    let content = data.cards;
+    let posts = [];
+    for (let i=0, len=content.length; i<len; i++){
+      let item = content[i];
+      let cardType = item.card_type;
+      if (cardType == '9') {
+        // 日期格式转换: 4分钟前 / 2小时前 / 昨天... / 09-12 / 2016-09-12
+        let postCreatedAt = item.mblog.created_at;
+        let startOfDay = moment().startOf('day').toDate();
+        if (/^\d{4}-\d\d-\d\d$/.test(postCreatedAt)) {
+          postCreatedAt = moment(postCreatedAt).toDate();
+        } else if (/^\d\d-\d\d$/.test(postCreatedAt)) {
+          postCreatedAt = moment(`${moment().get('year')}-${postCreatedAt}`).toDate();
+        } else if (/昨天/.test(postCreatedAt)) {
+          postCreatedAt = moment(startOfDay - 24 * 60 * 60 * 1000).toDate();
+        } else if (/小时前/.test(postCreatedAt)) {
+          let nowHour = moment().hour();
+          let hour = parseInt(postCreatedAt.replace('小时前', ''));
+          if (hour > nowHour) {
+            postCreatedAt = moment(startOfDay - 24 * 60 * 60 * 1000).toDate();
+          } else {
+            postCreatedAt = startOfDay;
+          }
+        } else {
+          postCreatedAt = startOfDay;
+        }
+        let post = {
+          itemId: item.itemid,
+          scheme: item.scheme,
+          screenName: item.mblog.user.screen_name,
+          text: item.mblog.text,
+          source: item.mblog.source,
+          postCreatedAt: postCreatedAt,
+          repostsCount: item.mblog.reposts_count,
+          commentsCount: item.mblog.comments_count,
+          attitudesCount: item.mblog.attitudes_count,
+          followersCount: item.mblog.user.followers_count,
+          followCount: item.mblog.user.follow_count
+        };
+        posts.push(post);
+      }
+    }
+    return posts;
+  });
 }
 
-function getJson(link, count, cb){
-	var nowLink = link + count;
-	https.get(nowLink ,function(res){
-		var body = [];
-		res.on('data', function(data){
-			body.push(data);
-		});
-		res.on('end', function(){
-			body = Buffer.concat(body).toString();
-			cb(link, count, body);
-		});
-	}).on('error', function(error){
-		throw error;
-	});
+function main(link, page) {
+  page = page || 1;
+  return tranLink(link).then(targetLink => {
+    return requestAndParseData(targetLink, page);
+  }).then(posts => {
+    return Promise.all(posts.map(post => {
+      return saveOrUpdataToDb(post);
+    })).then(() => {
+      let minDate;
+      posts.forEach(post => {
+        if (!minDate || minDate > post.postCreatedAt) {
+          minDate = post.postCreatedAt;
+        }
+      })
+      return minDate;
+    });
+  });
 }
 
-function parseJson(link, count, content, cb, callback){
-
-	try {
-		JSON.parse(content);
-	} catch(e) {
-		fs.writeFileSync('1.json', content);
-		throw (e);
-	}
-
-	content = JSON.parse(content);
-	content = content.cards;
-	var itemsArray = [];
-	for (var i=0, len=content.length; i<len; i++){
-		var item = content[i];
-		var cardType = item.card_type;
-		if (cardType == '9') {
-			var createdAt = item.mblog.created_at;
-			if (createdAt.indexOf('今天') > -1) {
-				var toDoubleDigit = function(s){
-					s = s.toString();
-					if (s.length == 1) {
-						return '0' + s;
-					} else {
-						return s;
-					}
-				};
-				var month = toDoubleDigit(new Date().getMonth() + 1);
-				var date = toDoubleDigit(new Date().getDate());
-				createdAt = createdAt.replace('今天', month + '-' + date);
-			}
-			if (createdAt.indexOf('分钟前') > -1) {
-				createdAt = formatTime(Date.now() - parseInt(createdAt.replace('分钟前', '')) * 60 * 1000);
-			}
-			if (createdAt.length == 11) {
-				createdAt = '2017-' + createdAt;
-			}
-			var itemObj = {
-				itemId: item.itemid,
-				scheme: item.scheme,
-				screenName: item.mblog.user.screen_name,
-				text: item.mblog.text.replace(/[\ud000-\udfff]/g, ''),
-				source: item.mblog.source,
-				createdAt: createdAt,
-				repostsCount: item.mblog.reposts_count,
-				commentsCount: item.mblog.comments_count,
-				attitudesCount: item.mblog.attitudes_count,
-				followersCount: item.mblog.user.followers_count,
-				followCount: item.mblog.user.follow_count
-			};
-			cb(itemObj);
-		}
-	}
-
-	try {
-		new Date(itemObj.createdAt);
-	} catch(e) {
-		console.log(itemObj);
-		throw (e);
-	}
-
-	if (new Date(itemObj.createdAt) > new Date(dateTime)) {
-		getLinksToDb(link, ++count, callback);
-	} else {
-		callback();
-	}
+function proxyMain(link, minDate) {
+  let count = 1;
+  minDate = minDate || moment().toDate();
+  return (function proxy(link, count) {
+    return main(link, count).then(date => {
+      if (minDate <= date) {
+        return proxy(link, ++count);
+      }
+      return date;
+    });
+  })(link, count);
 }
 
-function saveJsonToDb(o){
-	connection.query('select id from msg where itemId = ?', [o.itemId], function(err, results){
-		if (err) throw err;
-		if (results.length == 0) {
-			connection.query('insert into msg set ?', o, function(err, results){
-				if (err) throw err;
-				console.log(results.insertId, o.screenName, o.createdAt);
-			});
-		} else {
-			connection.query('update msg set itemId = ?, scheme = ?, screenName = ?, text = ?, source = ?, createdAt = ?, repostsCount = ?, commentsCount = ?, attitudesCount = ?, followersCount = ?, followCount = ? where id = ?', [o.itemId, o.scheme, o.screenName, o.text, o.source, o.createdAt, o.repostsCount, o.commentsCount, o.attitudesCount, o.followersCount, o.followCount, results[0].id], function(err, results){
-				if (err) throw err;
-				console.log(o.screenName + ' - ' + o.itemId);
-			});
-		}
-	});	
-}
-
-
-function formatTime(timeString){
-	var toDoubleDigit = function(number){
-		number = number.toString();
-		number.length == 1 && (number = '0' + number);
-		return number;
-	};
-	var time = new Date(timeString);
-	var year = time.getFullYear();
-	var month = toDoubleDigit(time.getMonth() + 1);
-	var date = toDoubleDigit(time.getDate());
-	var hour = toDoubleDigit(time.getHours());
-	var minute = toDoubleDigit(time.getMinutes());
-	return util.format('%s-%s-%s %s:%s', year, month, date, hour, minute);
-}
-
-
-
-exports.getLinksToDb = getLinksToDb;
-exports.tranLink = tranLink;
-exports.setDateTime = setDateTime;
+module.exports = proxyMain;
