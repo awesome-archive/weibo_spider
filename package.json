@@ -5,13 +5,18 @@
   "main": "index.js",
   "dependencies": {
     "axios": "^0.16.2",
+    "cheerio": "^1.0.0-rc.2",
+    "json2csv": "^3.11.2",
     "moment": "^2.18.1",
     "mongoose": "^4.11.11",
-    "mongoose-timestamp": "^0.6.0"
+    "mongoose-timestamp": "^0.6.0",
+    "request": "^2.83.0",
+    "request-promise": "^4.2.2"
   },
   "devDependencies": {},
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "export": "node export.js"
   },
   "author": "",
   "license": "ISC"
