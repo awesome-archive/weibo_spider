@@ -3,8 +3,8 @@
 const WeiboCnPost = require('./models/WeiboCnPost');
 const WeiboCnProfile = require('./models/WeiboCnProfile');
 const config = {
-  minTime: new Date(2017, 6, 1),
-  maxTime: new Date(2017, 9, 1)
+  minTime: new Date(2017, 0, 1),
+  maxTime: new Date(2017, 3, 1)
 };
 const fs = require('fs');
 const json2csv = require('json2csv');

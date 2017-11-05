@@ -6,19 +6,18 @@ let targetUri = require('./targetUri');
 
 
 // 串行
-let p = Promise.resolve();
-while (targetUri.length) {
+reduceTarget();
+function reduceTarget() {
+  if (!targetUri.length) {
+    console.log('done');
+    return;
+  }
   let target = targetUri.shift();
-  p = p.then(() => {
-    return getWeiboCn(target, new Date(2017, 6, 1));
-  }).then(() => {
-    console.log(`\n${target} is done. 剩余 ${targetUri.length} 条.\n`);
+  console.log(`\n${target} is crawing... 剩余 ${targetUri.length} 条.\n`);
+  getWeiboCn(target, new Date(2017, 0, 1)).then(() => {
+    reduceTarget();
   });
 }
-
-p = p.then(() => {
-  console.log('done');
-});
 
 
 

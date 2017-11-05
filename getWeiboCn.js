@@ -7,7 +7,7 @@ const WeiboCnProfile = require('./models/WeiboCnProfile');
 const fs = require('fs');
 
 const config = {
-  cookie: '_T_WM=978724ef7105eb38cf3ac270d74eedaa; SUB=_2A2500ZuDDeRhGeVL6FQX8SjPwz-IHXVUPSXLrDV6PUJbkdBeLVnDkW2cS-h--pnnpv4G38RMRbzeE68TWw..; SUHB=0u5Rdd2NLdftNW; SCF=AsjGpHiRCF78UtqAf93bAzk6B0-SIE9maWQeYfNOoK9yfZNQWFzrxR1b6HevXSgFgRFR63M8qmjwQO8gWzkqz5o.; SSOLoginState=1507191763'
+  cookie: 'ALF=1512462773; SCF=AqbCXVUjZP3Lmtjv9TJ7s_2lCNEirvhesYLoF6s-xx72QeQT2R1bYpulmHB3o12osWdJ9Obn2hlYeClo1CiBa5w.; SUB=_2A250-rzmDeRhGeVL6FQX8SjPwz-IHXVUBMSurDV6PUNbktBeLUbikW0XRPDTylsErGMTyvthdbstkQKwag..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5kGbmoeBxxfX5SF1NVW4pD5JpX5KMhUgL.Foefe0qceKq01he2dJLoI7LjIP8DMgLydJMt; SUHB=0QS52ImtH7P2zG; SSOLoginState=1509870774; _T_WM=297964363ce52983d16e26aab9124a66'
 };
 
 exports = module.exports = main;
@@ -98,17 +98,19 @@ function getWeibo(profile, page) {
         post.replace(/href="(https:\/\/weibo.cn\/comment.+?)"/g, (match, link) => {
           sourceLink = link
         });
-        let weibo = {
-          profile: profile._id,
-          content: data[1].trim(),
-          sourceLink: sourceLink,
-          attitudesCount: parseInt(data[2]),
-          repostsCount: parseInt(data[3]),
-          commentsCount: parseInt(data[4]),
-          postCreatedAt: getPublishTime(data[5]),
-          postFrom: data[6]
-        };
-        weiboArray.push(weibo);
+        if (data && data.length) {
+          let weibo = {
+            profile: profile._id,
+            content: data[1].trim(),
+            sourceLink: sourceLink,
+            attitudesCount: parseInt(data[2]),
+            repostsCount: parseInt(data[3]),
+            commentsCount: parseInt(data[4]),
+            postCreatedAt: getPublishTime(data[5]),
+            postFrom: data[6]
+          };
+          weiboArray.push(weibo);
+        }
       } catch (e) {
         console.log(e);
       }
