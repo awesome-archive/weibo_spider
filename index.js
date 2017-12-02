@@ -14,7 +14,7 @@ function reduceTarget() {
   }
   let target = targetUri.shift();
   console.log(`\n${target} is crawing... 剩余 ${targetUri.length} 条.\n`);
-  getWeiboCn(target, new Date(2017, 0, 1)).then(() => {
+  getWeiboCn(target, new Date(2017, 10, 20)).then(() => {
     reduceTarget();
   });
 }
