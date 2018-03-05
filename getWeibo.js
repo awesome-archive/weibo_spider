@@ -28,7 +28,7 @@ function tranLink(link) {
     } else {
       reject();
     }
-  })
+  });
 }
 
 function saveOrUpdataToDb(post) {
@@ -105,7 +105,7 @@ function main(link, page) {
         if (!minDate || minDate > post.postCreatedAt) {
           minDate = post.postCreatedAt;
         }
-      })
+      });
       return minDate;
     });
   });

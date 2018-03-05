@@ -7,7 +7,7 @@ const WeiboCnProfile = require('./models/WeiboCnProfile');
 const fs = require('fs');
 
 const config = {
-  cookie: 'ALF=1512462773; SCF=AqbCXVUjZP3Lmtjv9TJ7s_2lCNEirvhesYLoF6s-xx72QeQT2R1bYpulmHB3o12osWdJ9Obn2hlYeClo1CiBa5w.; SUB=_2A250-rzmDeRhGeVL6FQX8SjPwz-IHXVUBMSurDV6PUNbktBeLUbikW0XRPDTylsErGMTyvthdbstkQKwag..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5kGbmoeBxxfX5SF1NVW4pD5JpX5KMhUgL.Foefe0qceKq01he2dJLoI7LjIP8DMgLydJMt; SUHB=0QS52ImtH7P2zG; SSOLoginState=1509870774; _T_WM=297964363ce52983d16e26aab9124a66'
+  cookie: '_T_WM=45ef88ad24244033f4239209bef49e6c; SSOLoginState=1520254945; ALF=1522846945; SCF=AnAseSisSVzWQVztOdjiYlmPoYBqAlfBkfFYGK4iyipDKlTFSLdBrBubCnJ_XSHnXNyRyzZftlbra1RQ0ZGrPuM.; SUB=_2A253mU-xDeRhGeVL6FQX8SjPwz-IHXVVYlH5rDV6PUNbktAKLU7akW1NTFP2D5sbXopEVVN04ZGRTbUc8Hxawwz_; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5kGbmoeBxxfX5SF1NVW4pD5JpX5KMhUgL.Foefe0qceKq01he2dJLoI7LjIP8DMgLydJMt; SUHB=0YhRn4oDwuLkSD'
 };
 
 exports = module.exports = main;
@@ -23,7 +23,7 @@ function main(uri, minDate) {
         return new Promise(resolve => {
           setTimeout(() => {
             resolve();
-          }, 2000);
+          }, 100);
         });
       });
       return promise.then(() => {
@@ -96,7 +96,7 @@ function getWeibo(profile, page) {
         let data = /^(.+?)赞\[(\d+)\]\s转发\[(\d+)\]\s评论\[(\d+)\]\s收藏\s(.+?)\s来自(.+?)$/.exec(text);
         let sourceLink = '';
         post.replace(/href="(https:\/\/weibo.cn\/comment.+?)"/g, (match, link) => {
-          sourceLink = link
+          sourceLink = link;
         });
         if (data && data.length) {
           let weibo = {
@@ -125,14 +125,19 @@ function getWeibo(profile, page) {
           let post = new WeiboCnPost(weibo);
           return post.save();
         }
-      })
+      });
     })).then(() => {
-      return {
-        postCreatedAt: weiboArray[weiboArray.length - 1].postCreatedAt,
-        nextPage: page + 1
-      };
+      try {
+        return {
+          postCreatedAt: weiboArray[weiboArray.length - 1].postCreatedAt,
+          nextPage: page + 1
+        };
+      } catch(e) {
+        console.log(weiboArray);
+        // console.log(html);
+      }
     });
-  })
+  });
 }
 
 function getProfile(uri) {
@@ -160,6 +165,6 @@ function getProfile(uri) {
         let p = new WeiboCnProfile(profile);
         return p.save();
       }
-    })
-  })
+    });
+  });
 }

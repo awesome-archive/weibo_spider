@@ -8,7 +8,9 @@ const WeiboCnProfile = new mongoose.Schema({
   uri: String,
   weiboCount: Number,
   followCount: Number,
-  followersCount: Number
+  followersCount: Number,
+  property: String,
+  category: String
 });
 
 WeiboCnProfile.plugin(require('mongoose-timestamp'));
