@@ -5,16 +5,21 @@ const getWeiboCn = require('./getWeiboCn');
 const targetUri = require('./targetUri.json');
 
 (function reduceTarget() {
-  if (!targetUri.length) {
-    console.log('done');
-    setInterval(() => {
-      console.log(new Date());
-    }, 1000 * 60);
-    return;
-  }
   let target = targetUri.shift();
+  if (!target) {
+    console.log('done!');
+    process.exit();
+  }
   console.log(`\n${target} is crawing... 剩余 ${targetUri.length} 条.\n`);
-  getWeiboCn(target, new Date(2018, 2, 3)).then(() => {
+  getWeiboCn(target, new Date(2018, 0, 1)).then(() => {
     reduceTarget();
   });
 })();
+
+process.on('uncaughtException', () => {
+  process.exit(1);
+});
+
+process.on('unhandledRejection', () => {
+  process.exit(1);
+});
