@@ -1,6 +1,5 @@
 'use strict';
 
-require('./connect');
 const mongoose = require('mongoose');
 
 const WeiboCnPost = new mongoose.Schema({
@@ -19,4 +18,4 @@ const WeiboCnPost = new mongoose.Schema({
 
 WeiboCnPost.plugin(require('mongoose-timestamp'));
 
-module.exports = mongoose.model('WeiboCnPost', WeiboCnPost);
+mongoose.model('WeiboCnPost', WeiboCnPost);

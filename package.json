@@ -1,23 +1,30 @@
 {
   "name": "weibo-spider",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.1",
   "main": "index.js",
   "dependencies": {
     "axios": "^0.16.2",
     "cheerio": "^1.0.0-rc.2",
     "json2csv": "^3.11.2",
     "moment": "^2.18.1",
-    "mongoose": "^4.11.11",
+    "mongoose": "^5.0.10",
     "mongoose-timestamp": "^0.6.0",
     "request": "^2.83.0",
     "request-promise": "^4.2.2"
   },
   "devDependencies": {},
   "scripts": {
-    "start": "node index.js",
-    "export": "node export.js"
+    "start": "node spawn.js"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lqqyt2423/weibo_spider.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lqqyt2423/weibo_spider/issues"
+  },
+  "homepage": "https://github.com/lqqyt2423/weibo_spider#readme",
+  "description": ""
 }

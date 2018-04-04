@@ -4,6 +4,8 @@
 const getWeiboCn = require('./getWeiboCn');
 const targetUri = require('./targetUri.json');
 
+const minDate = new Date(2018, 0, 1);
+
 (function reduceTarget() {
   let target = targetUri.shift();
   if (!target) {
@@ -11,7 +13,7 @@ const targetUri = require('./targetUri.json');
     process.exit();
   }
   console.log(`\n${target} is crawing... 剩余 ${targetUri.length} 条.\n`);
-  getWeiboCn(target, new Date(2018, 0, 1)).then(() => {
+  getWeiboCn(target, minDate).then(() => {
     reduceTarget();
   });
 })();
