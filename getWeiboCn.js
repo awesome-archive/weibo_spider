@@ -2,9 +2,10 @@
 
 const rp = require('request-promise');
 const cheerio = require('cheerio');
-const WeiboCnPost = require('./models/WeiboCnPost');
-const WeiboCnProfile = require('./models/WeiboCnProfile');
+const models = require('./models');
 const fs = require('fs');
+
+const { WeiboCnPost, WeiboCnProfile } = models;
 
 const config = {
   cookie: '_T_WM=45ef88ad24244033f4239209bef49e6c; SSOLoginState=1522581231; ALF=1525173231; SCF=AnAseSisSVzWQVztOdjiYlmPoYBqAlfBkfFYGK4iyipDwEblYO6ddnxJaBPe3jAWtuNxMLeMB0MtXTG5jRnbD98.; SUB=_2A253xM6_DeRhGeVL6FQX8SjPwz-IHXVVRtL3rDV6PUNbktANLRTgkW1NTFP2DzTP2qmVKMen7F1Q3dfotB1IWchX; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5kGbmoeBxxfX5SF1NVW4pD5JpX5KMhUgL.Foefe0qceKq01he2dJLoI7LjIP8DMgLydJMt; SUHB=0nlubRomMppHo2'

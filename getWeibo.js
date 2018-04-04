@@ -3,8 +3,9 @@
 const url = require('url');
 const axios = require('axios');
 const moment = require('moment');
+const models = require('./models');
 
-const WeiboPost = require('./models/WeiboPost');
+const { WeiboPost } = models;
 
 // basic mobile link to api link
 function tranLink(link) {
