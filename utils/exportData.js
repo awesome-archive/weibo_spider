@@ -105,6 +105,9 @@ module.exports = class ExportData {
           obj[postFieldsMap[key]] = value;
         }
       });
+      if (!obj.转发数) obj.转发数 = 0;
+      if (!obj.评论数) obj.评论数 = 0;
+      if (!obj.点赞数) obj.点赞数 = 0;
       return obj;
     });
   }
