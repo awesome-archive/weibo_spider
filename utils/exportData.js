@@ -69,7 +69,7 @@ module.exports = class ExportData {
 
   async toCsv() {
     const data = await this.findData();
-    return json2csv({ data });
+    return addBom(json2csv({ data }));
   }
 
   async toStaJson() {
@@ -79,7 +79,7 @@ module.exports = class ExportData {
 
   async toStaCsv() {
     const data = await this.statistic();
-    return json2csv({ data });
+    return addBom(json2csv({ data }));
   }
 
   async findData() {
@@ -144,3 +144,9 @@ module.exports = class ExportData {
   }
 
 };
+
+function addBom(csv) {
+  const bom = Buffer.from('\uFEFF');
+  const csvBuf = Buffer.from(csv);
+  return Buffer.concat([bom, csvBuf]).toString();
+}
