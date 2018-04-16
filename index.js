@@ -1,10 +1,8 @@
 'use strict';
 
 // weibo.cn html parse
-const models = require('./models');
 const targetUri = require('./targetUri.json');
-
-const { getWeiboCn } = models;
+const getWeiboCn = require('./getWeiboCn');
 
 const minDate = new Date(2018, 0, 1);
 
