@@ -1,30 +1,84 @@
 'use strict';
 
-const rp = require('request-promise');
-const cheerio = require('cheerio');
-const models = require('./models');
 const fs = require('fs');
+const path = require('path');
+const cheerio = require('cheerio');
+const moment = require('moment');
+const rp = require('request-promise');
+const models = require('./models');
+
 
 const { WeiboCnPost, WeiboCnProfile } = models;
 
 const config = {
-  cookie: 'ALF=1525173231; SCF=AnAseSisSVzWQVztOdjiYlmPoYBqAlfBkfFYGK4iyipDwEblYO6ddnxJaBPe3jAWtuNxMLeMB0MtXTG5jRnbD98.; SUB=_2A253xM6_DeRhGeVL6FQX8SjPwz-IHXVVRtL3rDV6PUNbktANLRTgkW1NTFP2DzTP2qmVKMen7F1Q3dfotB1IWchX; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5kGbmoeBxxfX5SF1NVW4pD5JpX5KMhUgL.Foefe0qceKq01he2dJLoI7LjIP8DMgLydJMt; SUHB=0nlubRomMppHo2; _T_WM=f4a9a3ed075774b0e009575a7efb7361'
+  cookie: '_T_WM=8af460d60530fca52a502160943d7ec3; ALF=1531661282; SCF=AnAseSisSVzWQVztOdjiYlmPoYBqAlfBkfFYGK4iyipDt9SrmeWJhaW_gd7vLwKEP4YhcbUPUxT6-BrTsd5WYDs.; SUB=_2A252J86zDeRhGeVL6FQX8SjPwz-IHXVV69L7rDV6PUNbktAKLW3TkW1NTFP2DyGzyUuM8F0QBjYTLtm0uTLg1KiE; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5kGbmoeBxxfX5SF1NVW4pD5JpX5KMhUgL.Foefe0qceKq01he2dJLoI7LjIP8DMgLydJMt; SUHB=0A0Jz7oKB5Wgd6; SSOLoginState=1529069283'
 };
 
-module.exports = main;
+const randomMs = function() {
+  const baseMs = 500;
+  const randomMs = 500;
+  const res = Math.round(Math.random() * randomMs + baseMs);
+  return res;
+};
 
-function main(uri, minDate) {
-  minDate = minDate || new Date();
-  return getProfile(uri).then(profile => {
-    let getWeiboByDate = function(page) {
-      return getWeibo(profile, page).then(result => {
-        if (result.postCreatedAt > minDate) {
-          return getWeiboByDate(result.nextPage);
-        }
+class CrawlHistory {
+  constructor() {
+    this.count = 0;
+    this.file = path.join(__dirname, './crawl.log');
+    this.countInterval = 50;
+    this.timeInterval = 1000 * 60 * 5;
+
+    this.clean();
+  }
+  shouldCrawl(uri) {
+    try {
+      const res = fs.readFileSync(this.file, 'utf8').trim().split('\n');
+      const uris = res.map(line => line.split(', ')[1]);
+      if (~uris.indexOf(uri)) return false;
+      return true;
+    } catch(e) {
+      return true;
+    }
+  }
+  set(uri) {
+    fs.appendFileSync(this.file, `${Date.now()}, ${uri}\n`, 'utf8');
+    this.count++;
+    if (this.count % this.countInterval === 0) {
+      this.clean();
+    }
+  }
+  clean() {
+    try {
+      let res = fs.readFileSync(this.file, 'utf8').trim().split('\n');
+      res = res.filter(line => {
+        const time = line.split(', ')[0];
+        const interval = Date.now() - time;
+        if (interval > this.timeInterval) return false;
+        return true;
       });
-    };
-    return getWeiboByDate();
-  });
+      fs.writeFileSync(this.file, res.join('\n') + '\n', 'utf8');
+    } catch (e) {
+      // do nothing
+    }
+  }
+}
+
+const crawlHistory = new CrawlHistory();
+
+module.exports = getWeiboCn;
+
+async function getWeiboCn(uri, minDate) {
+  minDate = minDate || new Date();
+  const profile = await getProfile(uri);
+
+  const getWeiboByDate = async function(page) {
+    const res = await getWeibo(profile, page);
+    if (res.postCreatedAt > minDate) {
+      await getWeiboByDate(res.nextPage);
+    }
+  };
+
+  await getWeiboByDate();
 }
 
 function getPublishTime(string) {
@@ -54,39 +108,38 @@ function getPublishTime(string) {
 }
 
 async function getWeibo(profile, page = 1) {
-  await Promise.resolve();
   let uri = profile.uri;
   uri = uri + '?page=' + page;
-  let alreadyCrawlUris = fs.readFileSync('./crawlHistory.txt', 'utf8').trim().split('\n');
-  if (alreadyCrawlUris.indexOf(uri) > -1) {
-    console.log(`${uri} already crawled, jump to next page`);
+
+  // 判断是否最近抓取过，如抓取过，直接抓下一个页面
+  if (!crawlHistory.shouldCrawl(uri)) {
+    console.log(`${uri} already crawled, jump to next page\n`);
     return {
       postCreatedAt: new Date(),
       nextPage: page + 1
     };
   }
 
-  let options = {
+  const options = {
     uri: uri,
-    headers: {
-      Cookie: config.cookie
-    }
+    headers: { Cookie: config.cookie }
   };
 
   const html = await getHtml(options);
-  let postRegex = /(<div\sclass="c"\sid="M_.+?)<div\sclass="s"><\/div>/g;
-  let weiboArray = [];
+  const postRegex = /(<div\sclass="c"\sid="M_.+?)<div\sclass="s"><\/div>/g;
+  const weiboArray = [];
+
   html.replace(postRegex, (match, post) => {
     try {
-      let $ = cheerio.load(post);
-      let text = $.text();
-      let data = /^(.+?)赞\[(\d+)\]\s转发\[(\d+)\]\s评论\[(\d+)\]\s收藏\s(.+?)\s来自(.+?)$/.exec(text);
+      const $ = cheerio.load(post);
+      const text = $.text();
+      const data = /^(.+?)赞\[(\d+)\]\s转发\[(\d+)\]\s评论\[(\d+)\]\s收藏\s(.+?)\s来自(.+?)$/.exec(text);
       let sourceLink = '';
       post.replace(/href="(https:\/\/weibo.cn\/comment.+?)"/g, (match, link) => {
         sourceLink = link;
       });
       if (data && data.length) {
-        let weibo = {
+        const weibo = {
           profile: profile._id,
           content: data[1].trim(),
           sourceLink: sourceLink,
@@ -96,64 +149,70 @@ async function getWeibo(profile, page = 1) {
           postCreatedAt: getPublishTime(data[5]),
           postFrom: data[6]
         };
+
+        console.log(moment(weibo.postCreatedAt).format('YYYY-MM-DD HH:mm'));
+        console.log(weibo.content.slice(0, 50) + '...');
+        console.log();
+
         weiboArray.push(weibo);
       }
     } catch (e) {
-      console.log(e);
+      throw e;
     }
   });
 
+  if (!weiboArray.length) {
+    throw new Error(`weiboArray无item\n${uri}\n${html}`);
+  }
+
   await Promise.all(weiboArray.map(weibo => {
-    return WeiboCnPost.findOne({
-      sourceLink: weibo.sourceLink
-    }).then(post => {
-      if (post) {
-        return WeiboCnPost.findByIdAndUpdate(post._id, weibo, { new: true });
-      } else {
-        let post = new WeiboCnPost(weibo);
-        return post.save();
-      }
-    });
+    return WeiboCnPost.findOneAndUpdate(
+      { sourceLink: weibo.sourceLink },
+      weibo,
+      { upsert: true, new: true }
+    );
   }));
 
   await new Promise(resolve => {
-    setTimeout(resolve, 1000);
+    setTimeout(resolve, randomMs());
   });
 
-  fs.appendFileSync('./crawlHistory.txt', `${uri}\n`);
+  crawlHistory.set(uri);
+
   return {
     postCreatedAt: weiboArray[weiboArray.length - 1].postCreatedAt,
     nextPage: page + 1
   };
 }
 
-function getProfile(uri) {
-  let options = {
+async function getProfile(uri) {
+  const options = {
     uri: uri,
-    headers: {
-      Cookie: config.cookie
-    }
+    headers: { Cookie: config.cookie }
   };
-  return getHtml(options).then(html => {
-    let data = /<span\sclass="tc">微博\[(\d+)\].+?关注\[(\d+)\].+?粉丝\[(\d+)\]/.exec(html);
-    let profile = {
-      nickName: /<span\sclass="ctt">(.+?)</.exec(html)[1],
-      uri: uri,
-      weiboCount: data[1],
-      followCount: data[2],
-      followersCount: data[3]
-    };
-    return WeiboCnProfile.findOne({
-      uri: profile.uri
-    }).then(p => {
-      if (p) {
-        return WeiboCnProfile.findByIdAndUpdate(p._id, profile, { new: true });
-      } else {
-        let p = new WeiboCnProfile(profile);
-        return p.save();
-      }
-    });
-  });
+  const html = await getHtml(options);
+
+  const match = html.match(/<span\sclass="tc">微博\[(\d+)\].+?关注\[(\d+)\].+?粉丝\[(\d+)\]/);
+  if (match) {
+    const nickNameMatch = html.match(/<span\sclass="ctt">(.+?)</);
+    let nickName = '';
+    if (nickNameMatch) nickName = nickNameMatch[1];
+    const profile = await WeiboCnProfile.findOneAndUpdate(
+      { uri },
+      {
+        nickName,
+        uri,
+        weiboCount: match[1],
+        followCount: match[2],
+        followersCount: match[3],
+      },
+      { upsert: true, new: true }
+    );
+    console.log('抓取微博账号:', profile.nickName, '\n');
+    return profile;
+  } else {
+    throw new Error('解析profile错误');
+  }
 }
 
 
@@ -166,8 +225,8 @@ async function getHtml(options) {
       rp(options)
     ]);
     if (html) return html;
-    return await getHtml();
+    return await getHtml(options);
   } catch(e) {
-    process.exit(1);
+    throw e;
   }
 }

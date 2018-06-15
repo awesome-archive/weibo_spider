@@ -13,7 +13,6 @@ mongoose.set('debug', false);
 [
   'WeiboCnPost',
   'WeiboCnProfile',
-  'WeiboPost',
 ].forEach(function (modelName) {
   require(path.join(__dirname, modelName));
   exports[modelName] = mongoose.model(modelName);

@@ -1,27 +1,29 @@
 'use strict';
 
-// weibo.cn html parse
+const fs = require('fs');
 const targetUri = require('./targetUri.json');
 const getWeiboCn = require('./getWeiboCn');
 
-const minDate = new Date(2018, 0, 1);
+const minDate = new Date(2018, 3, 1);
 
-(function reduceTarget() {
-  let target = targetUri.shift();
-  if (!target) {
-    console.log('done!');
-    process.exit();
+async function reduceTarget() {
+  for (let i = 0, len = targetUri.length; i < len; i++) {
+    const target = targetUri[i];
+    await getWeiboCn(target, minDate);
+    console.log(`\n${target}已抓取完成，剩余${len - 1 - i}条。\n`);
   }
-  console.log(`\n${target} is crawing... 剩余 ${targetUri.length} 条.\n`);
-  getWeiboCn(target, minDate).then(() => {
-    reduceTarget();
-  });
-})();
+  console.log('done');
+  process.exit();
+}
 
-process.on('uncaughtException', () => {
+reduceTarget();
+
+process.on('uncaughtException', err => {
+  fs.appendFileSync('error.log', new Date().toLocaleString() + '\n' + err.stack + '\n\n', 'utf8');
   process.exit(1);
 });
 
-process.on('unhandledRejection', () => {
+process.on('unhandledRejection', (reason, p) => {
+  fs.appendFileSync('error.log', `${new Date().toLocaleString()}\n未处理的rejection: ${String(p)}\n原因:${reason.stack}\n\n`, 'utf8');
   process.exit(1);
 });
