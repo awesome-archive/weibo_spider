@@ -6,19 +6,14 @@ const cheerio = require('cheerio');
 const moment = require('moment');
 const rp = require('request-promise');
 const models = require('./models');
-
+const config = require('./config');
 
 const { WeiboCnPost, WeiboCnProfile } = models;
 
-const config = {
-  cookie: '_T_WM=8af460d60530fca52a502160943d7ec3; ALF=1531661282; SCF=AnAseSisSVzWQVztOdjiYlmPoYBqAlfBkfFYGK4iyipDt9SrmeWJhaW_gd7vLwKEP4YhcbUPUxT6-BrTsd5WYDs.; SUB=_2A252J86zDeRhGeVL6FQX8SjPwz-IHXVV69L7rDV6PUNbktAKLW3TkW1NTFP2DyGzyUuM8F0QBjYTLtm0uTLg1KiE; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5kGbmoeBxxfX5SF1NVW4pD5JpX5KMhUgL.Foefe0qceKq01he2dJLoI7LjIP8DMgLydJMt; SUHB=0A0Jz7oKB5Wgd6; SSOLoginState=1529069283'
-};
-
+const { sleepInterval, spiderTimeInterval } = config;
+const { base: sleepBase, random: sleepRandom } = sleepInterval;
 const randomMs = function() {
-  const baseMs = 500;
-  const randomMs = 500;
-  const res = Math.round(Math.random() * randomMs + baseMs);
-  return res;
+  return Math.round(Math.random() * sleepRandom + sleepBase);
 };
 
 class CrawlHistory {
@@ -26,7 +21,7 @@ class CrawlHistory {
     this.count = 0;
     this.file = path.join(__dirname, './crawl.log');
     this.countInterval = 50;
-    this.timeInterval = 1000 * 60 * 5;
+    this.timeInterval = spiderTimeInterval;
 
     this.clean();
   }
@@ -162,7 +157,7 @@ async function getWeibo(profile, page = 1) {
   });
 
   if (!weiboArray.length) {
-    throw new Error(`weiboArray无item\n${uri}\n${html}`);
+    throw new Error(`weiboArray无item\n${uri}\n`);
   }
 
   await Promise.all(weiboArray.map(weibo => {

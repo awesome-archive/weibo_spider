@@ -1,6 +1,7 @@
 'use strict';
 
 const child_process = require('child_process');
+const { rebootInterval = 5000 } = require('./config');
 
 // deamon
 function spawn(mainModule) {
@@ -8,10 +9,10 @@ function spawn(mainModule) {
 
   worker.on('exit', function(code) {
     if (code !== 0) {
-      console.log('出现错误，5s后重启程序\n');
+      console.log(`出现错误，${rebootInterval / 1000}s后重启程序\n`);
       setTimeout(() => {
         spawn(mainModule);
-      }, 5000);
+      }, rebootInterval);
     }
   });
 }

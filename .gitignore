@@ -61,3 +61,4 @@ private/
 package-lock.json
 error.log
 crawl.log
+target.txt

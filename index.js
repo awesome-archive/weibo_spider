@@ -1,10 +1,15 @@
 'use strict';
 
 const fs = require('fs');
-const targetUri = require('./targetUri.json');
 const getWeiboCn = require('./getWeiboCn');
+let { minDate, targetUri } = require('./config');
 
-const minDate = new Date(2018, 3, 1);
+try {
+  let tmpUri = fs.readFileSync('./target.txt', 'utf8').trim().split('\n');
+  if (tmpUri && tmpUri.length) targetUri = tmpUri;
+} catch(e) {
+  // do nothing
+}
 
 async function reduceTarget() {
   for (let i = 0, len = targetUri.length; i < len; i++) {
