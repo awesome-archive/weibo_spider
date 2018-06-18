@@ -3,7 +3,7 @@
 const fs = require('fs');
 const rp = require('request-promise');
 
-const { httpTimeout, allByProxy, useProxy } = require('./config');
+const { httpTimeout, allByProxy, useProxy, cookie } = require('./config');
 
 let ipPool = [];
 if (useProxy) {
@@ -14,7 +14,14 @@ if (useProxy) {
   }
 }
 
-async function getHtml(options = {}) {
+async function getHtml(uri) {
+
+  if (!uri) throw new Error('请传入uri参数');
+
+  const options = {
+    uri,
+    headers: { Cookie: cookie },
+  };
 
   // 代理设置
   if (useProxy && ipPool.length) {
@@ -50,7 +57,7 @@ async function getHtml(options = {}) {
       rp(options)
     ]);
     if (html) return html;
-    return await getHtml(options);
+    return await getHtml(uri);
   } catch (e) {
     throw e;
   }

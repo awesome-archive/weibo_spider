@@ -70,12 +70,7 @@ async function getWeibo(profile, page = 1) {
     };
   }
 
-  const options = {
-    uri: uri,
-    headers: { Cookie: config.cookie }
-  };
-
-  const html = await getHtml(options);
+  const html = await getHtml(uri);
   const postRegex = /(<div\sclass="c"\sid="M_.+?)<div\sclass="s"><\/div>/g;
   const weiboArray = [];
 
@@ -83,12 +78,22 @@ async function getWeibo(profile, page = 1) {
     try {
       const $ = cheerio.load(post);
       const text = $.text();
-      const data = /^(.+?)赞\[(\d+)\]\s转发\[(\d+)\]\s评论\[(\d+)\]\s收藏\s(.+?)\s来自(.+?)$/.exec(text);
+      const data = /^(.+?)赞\[(\d+)\]\s转发\[(\d+)\]\s评论\[(\d+)\]\s收藏\s(.+?)$/.exec(text);
       let sourceLink = '';
       post.replace(/href="(https:\/\/weibo.cn\/comment.+?)"/g, (match, link) => {
         sourceLink = link;
       });
       if (data && data.length) {
+
+        const tmpStr = data[5];
+        let tmpTime = tmpStr;
+        let tmpForm = '';
+        const tmpIndex = tmpStr.indexOf('来自');
+        if (tmpIndex > -1) {
+          tmpTime = tmpStr.slice(0, tmpIndex).trim();
+          tmpForm = tmpStr.slice(tmpIndex).trim();
+        }
+
         const weibo = {
           profile: profile._id,
           content: data[1].trim(),
@@ -96,8 +101,8 @@ async function getWeibo(profile, page = 1) {
           attitudesCount: parseInt(data[2]),
           repostsCount: parseInt(data[3]),
           commentsCount: parseInt(data[4]),
-          postCreatedAt: getPublishTime(data[5]),
-          postFrom: data[6]
+          postCreatedAt: getPublishTime(tmpTime),
+          postFrom: tmpForm
         };
 
         console.log(moment(weibo.postCreatedAt).format('YYYY-MM-DD HH:mm'));
@@ -105,6 +110,8 @@ async function getWeibo(profile, page = 1) {
         console.log();
 
         weiboArray.push(weibo);
+      } else {
+        throw new Error(`正文内容正则表达式解析错误\n${uri}\n`);
       }
     } catch (e) {
       throw e;
@@ -112,9 +119,9 @@ async function getWeibo(profile, page = 1) {
   });
 
   if (!weiboArray.length) {
-    console.log('\n');
-    console.log(html);
-    console.log('\n');
+    // console.log('\n');
+    // console.log(html);
+    // console.log('\n');
     throw new Error(`weiboArray无item\n${uri}\n`);
   }
 
@@ -139,11 +146,7 @@ async function getWeibo(profile, page = 1) {
 }
 
 async function getProfile(uri) {
-  const options = {
-    uri: uri,
-    headers: { Cookie: config.cookie }
-  };
-  const html = await getHtml(options);
+  const html = await getHtml(uri);
 
   const match = html.match(/<span\sclass="tc">微博\[(\d+)\].+?关注\[(\d+)\].+?粉丝\[(\d+)\]/);
   if (match) {
