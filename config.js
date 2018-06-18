@@ -2,7 +2,7 @@
 
 module.exports = {
   // deamon 重启间隔时间
-  rebootInterval: 1000 * 5,
+  rebootInterval: 1000 * 10,
 
   // 抓取最小时间
   minDate: new Date('2018-4-1'),
@@ -16,7 +16,7 @@ module.exports = {
   // 防ban随机sleep
   sleepInterval: {
     base: 1000,
-    random: 1500,
+    random: 2000,
   },
 
   // 多久之内不重新爬同一网页
