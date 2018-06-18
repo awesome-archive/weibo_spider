@@ -3,19 +3,21 @@
 const fs = require('fs');
 const rp = require('request-promise');
 
-const { httpTimeout, allByProxy } = require('./config');
+const { httpTimeout, allByProxy, useProxy } = require('./config');
 
 let ipPool = [];
-try {
-  ipPool = fs.readFileSync('./ippool.txt', 'utf8').trim().split('\n');
-} catch(e) {
-  // console.log(e);
+if (useProxy) {
+  try {
+    ipPool = fs.readFileSync('./ippool.txt', 'utf8').trim().split('\n');
+  } catch (e) {
+    // console.log(e);
+  }
 }
 
 async function getHtml(options = {}) {
 
   // 代理设置
-  if (ipPool.length) {
+  if (useProxy && ipPool.length) {
 
     // 设置代理ip
     const setProxy = (index) => {
@@ -36,9 +38,9 @@ async function getHtml(options = {}) {
     }
   }
 
-  console.log();
-  console.log('request options', options);
-  console.log();
+  // console.log();
+  // console.log('request options', options);
+  // console.log();
 
   try {
     const html = await Promise.race([
