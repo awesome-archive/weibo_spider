@@ -4,9 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio');
 const moment = require('moment');
-const rp = require('request-promise');
 const models = require('./models');
 const config = require('./config');
+const getHtml = require('./getHtml');
 
 const { WeiboCnPost, WeiboCnProfile } = models;
 
@@ -207,21 +207,5 @@ async function getProfile(uri) {
     return profile;
   } else {
     throw new Error('解析profile错误');
-  }
-}
-
-
-async function getHtml(options) {
-  try {
-    const html = await Promise.race([
-      new Promise(resolve => {
-        setTimeout(resolve, 5000);
-      }),
-      rp(options)
-    ]);
-    if (html) return html;
-    return await getHtml(options);
-  } catch(e) {
-    throw e;
   }
 }
