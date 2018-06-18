@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const getWeiboCn = require('./getWeiboCn');
+const crawlHistory = require('./crawlHistory');
 let { minDate, targetUri } = require('./config');
 
 try {
@@ -14,7 +15,14 @@ try {
 async function reduceTarget() {
   for (let i = 0, len = targetUri.length; i < len; i++) {
     const target = targetUri[i];
-    await getWeiboCn(target, minDate);
+
+    crawlHistory.clean();
+
+    if (crawlHistory.shouldCrawl(target)) {
+      await getWeiboCn(target, minDate);
+    }
+
+    crawlHistory.set(target);
     console.log(`\n${target}已抓取完成，剩余${len - 1 - i}条。\n`);
   }
   console.log('done');
