@@ -27,7 +27,7 @@ const profileFieldsMap = {
 };
 
 module.exports = class ExportData {
-  
+
   constructor(category, minDate, maxDate, path, basename) {
     if (!category || !Array.isArray(category)) throw new Error('请传入正确category参数');
     if (!minDate || !maxDate) throw new Error('请传入时间范围');
@@ -139,6 +139,19 @@ module.exports = class ExportData {
         };
       }
     });
+
+    // 那些本季度没有发过微博的账号也需要查找出来
+    const profiles = await models.WeiboCnProfile.find({ category: { $in: this.category } });
+    profiles.forEach(p => {
+      const { uri } = p;
+      if (!aggrObj[uri]) {
+        aggrObj[uri] = {};
+        Object.keys(profileFieldsMap).forEach(key => {
+          aggrObj[uri][profileFieldsMap[key]] = p[key];
+        });
+      }
+    });
+
     const aggrArray = Object.keys(aggrObj).map(key => aggrObj[key]);
     return aggrArray;
   }
