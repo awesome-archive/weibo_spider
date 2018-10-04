@@ -107,6 +107,7 @@ async function getWeibo(profile, page = 1) {
 
         console.log(moment(weibo.postCreatedAt).format('YYYY-MM-DD HH:mm'));
         console.log(weibo.content.slice(0, 50) + '...');
+        console.log('转发数', weibo.repostsCount, '评论数', weibo.commentsCount, '点赞数', weibo.attitudesCount);
         console.log();
 
         weiboArray.push(weibo);
