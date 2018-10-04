@@ -1,19 +1,19 @@
 'use strict';
 
-module.exports = {
+const config = {
   // deamon 重启间隔时间
   rebootInterval: 1000 * 10,
 
   // 抓取最小时间
-  minDate: new Date('2018-4-1'),
+  minDate: new Date('2018/7/1'),
 
   // http timeout
   httpTimeout: 1000 * 10,
 
   // cookie
-  cookie: '_T_WM=8af460d60530fca52a502160943d7ec3; ALF=1531904471; SCF=AnAseSisSVzWQVztOdjiYlmPoYBqAlfBkfFYGK4iyipDjNCzf3nF8Mk-YFGXe2_SFpFrvYmtjHtkbR0nCsHOgfc.; SUB=_2A252IwbyDeRhGeVL6FQX8SjPwz-IHXVV76q6rDV6PUJbktANLUHukW1NTFP2D56zZ2c_6YSDkgN6zVjNM_pPNyj-; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5kGbmoeBxxfX5SF1NVW4pD5JpX5K-hUgL.Foefe0qceKq01he2dJLoI7LjIP8DMgLydJMt; SUHB=0IIVjCoUwhbyVZ; SSOLoginState=1529312931',
+  cookie: '',
 
-  // 防ban随机sleep
+  // 防 ban 随机 sleep
   sleepInterval: {
     base: 1000,
     random: 2000,
@@ -23,14 +23,40 @@ module.exports = {
   spiderTimeInterval: 1000 * 60 * 60 * 24 * 2,
 
   // 是否使用代理
-  useProxy: true,
+  useProxy: false,
 
   // 是否全部使用代理ip抓取
   allByProxy: false,
 
   // 抓取目标
   targetUri: [
-    'https://weibo.cn/u/3217179555',
-    'https://weibo.cn/fenng',
-  ]
+    'https://weibo.cn/u/2804414062',
+    'https://weibo.cn/u/6239620007',
+  ],
+
+  // 发送邮件的方法
+  sendMail: () => {},
 };
+
+// 忽略下面的代码
+try {
+  const myConfig = require('./my_config');
+  const fn = (a, b) => {
+    const keys  = Object.keys(a);
+    keys.forEach(k => {
+      if (b.hasOwnProperty(k)) {
+        if (Object.prototype.toString.call(b[k]) === '[object Object]') {
+          fn(a[k], b[k]);
+        } else {
+          a[k] = b[k];
+        }
+      }
+    });
+  };
+  fn(config, myConfig);
+} catch(e) {
+  // console.log(e);
+  // Do nothing
+}
+
+module.exports = config;

@@ -61,6 +61,5 @@ private/
 package-lock.json
 error.log
 crawl.log
-target.txt
 ippool.txt
-sendMail.js
+my_config.js

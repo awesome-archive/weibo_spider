@@ -3,23 +3,7 @@
 const fs = require('fs');
 const getWeiboCn = require('./getWeiboCn');
 const crawlHistory = require('./crawlHistory');
-let { minDate, targetUri } = require('./config');
-
-// 用于覆盖抓取目标
-try {
-  let tmpUri = fs.readFileSync('./target.txt', 'utf8').trim().split('\n');
-  if (tmpUri && tmpUri.length) targetUri = tmpUri;
-} catch(e) {
-  // do nothing
-}
-
-// 用于发送错误邮件
-let sendMail;
-try {
-  sendMail = require('./sendMail');
-} catch(e) {
-  // do nothing
-}
+let { minDate, targetUri, sendMail } = require('./config');
 
 async function reduceTarget() {
   for (let i = 0, len = targetUri.length; i < len; i++) {
@@ -39,7 +23,6 @@ async function reduceTarget() {
 }
 
 reduceTarget();
-
 
 // 错误处理
 const errHandler = (err) => {
