@@ -28,10 +28,9 @@ const profileFieldsMap = {
 
 module.exports = class ExportData {
 
-  constructor(category, minDate, maxDate, path, basename) {
-    if (!category || !Array.isArray(category)) throw new Error('请传入正确category参数');
+  constructor(query, minDate, maxDate, path, basename) {
     if (!minDate || !maxDate) throw new Error('请传入时间范围');
-    this.category = category;
+    this.query = query;
     this.minDate = minDate;
     this.maxDate = maxDate;
     this.path = path;
@@ -83,7 +82,7 @@ module.exports = class ExportData {
   }
 
   async findData() {
-    const profiles = await models.WeiboCnProfile.find({ category: { $in: this.category } });
+    const profiles = await models.WeiboCnProfile.find(this.query);
     const profileIds = profiles.map(p => p._id);
     const posts = await models.WeiboCnPost.find({
       profile: { $in: profileIds },
@@ -141,7 +140,7 @@ module.exports = class ExportData {
     });
 
     // 那些本季度没有发过微博的账号也需要查找出来
-    const profiles = await models.WeiboCnProfile.find({ category: { $in: this.category } });
+    const profiles = await models.WeiboCnProfile.find(this.query);
     profiles.forEach(p => {
       const { uri } = p;
       if (!aggrObj[uri]) {

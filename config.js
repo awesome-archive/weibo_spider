@@ -5,7 +5,7 @@ const config = {
   rebootInterval: 1000 * 10,
 
   // 抓取最小时间
-  minDate: new Date('2018/7/1'),
+  minDate: new Date('2018/10/1'),
 
   // http timeout
   httpTimeout: 1000 * 10,
